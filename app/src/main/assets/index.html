@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Asistencia CVIC</title>
+<style>
+@font-face { font-family: "Mali"; font-weight: 500; src: url("fonts/mali-500.ttf") format("truetype"); }
+@font-face { font-family: "Mali"; font-weight: 700; src: url("fonts/mali-700.ttf") format("truetype"); }
+@font-face { font-family: "Inter"; font-weight: 400; src: url("fonts/inter-400.ttf") format("truetype"); }
+@font-face { font-family: "Inter"; font-weight: 500 600; src: url("fonts/inter-600.ttf") format("truetype"); }
+@font-face { font-family: "Inter"; font-weight: 700; src: url("fonts/inter-700.ttf") format("truetype"); }
+/* Layout: herramienta de tableta en tres vistas (Sesión · Integrantes · Plantilla), con la misma paleta salvia de la plantilla de Samsung Notes */
+:root {
+  --bg: #f3f4ef;
+  --surface: #ffffff;
+  --ink: #23302a;
+  --muted: #5d6b63;
+  --line: #d8ddd4;
+  --sage: #66796b;
+  --sage-ink: #ffffff;
+  --cell: #c5d3c8;
+  --cell-ink: #1d2a22;
+  --consejo: #b8b4aa;
+  --consejo-ink: #2a2620;
+  --row: #ecece6;
+  --red: #c8231b;
+  --ok: #2f7d4f;
+  --warn: #9a5b00;
+  --focus: #2f6fd1;
+  --font-display: "Mali", "Comic Sans MS", "Chalkboard SE", cursive;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151a17; --surface: #1d2420; --ink: #e6ebe6; --muted: #a2b0a7; --line: #333d37;
+    --sage: #7f9484; --sage-ink: #0f1411; --cell: #3a4a3f; --cell-ink: #eef3ef;
+    --consejo: #5e594e; --consejo-ink: #fbf6ec; --row: #252d28; --red: #ff6a5f;
+    --ok: #6fd39a; --warn: #f0b45a; --focus: #7fb0ff; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #151a17; --surface: #1d2420; --ink: #e6ebe6; --muted: #a2b0a7; --line: #333d37;
+  --sage: #7f9484; --sage-ink: #0f1411; --cell: #3a4a3f; --cell-ink: #eef3ef;
+  --consejo: #5e594e; --consejo-ink: #fbf6ec; --row: #252d28; --red: #ff6a5f;
+  --ok: #6fd39a; --warn: #f0b45a; --focus: #7fb0ff; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 48px; display: grid; gap: 20px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* Encabezado */
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; justify-content: space-between; }
+.brand { display: flex; align-items: baseline; gap: 10px; }
+.brand h1 { font-family: var(--font-display); font-weight: 700; font-size: 1.7rem; color: var(--sage); letter-spacing: .02em; }
+.status { font-size: .8rem; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.status[data-s="ok"]::before { background: var(--ok); }
+.status[data-s="local"]::before { background: var(--warn); }
+.status[data-s="err"]::before { background: var(--red); }
+.tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px; flex-wrap: wrap; }
+.tabs a { text-decoration: none; color: var(--muted); padding: 8px 14px; border-radius: 9px; font-weight: 600; font-size: .92rem; }
+.tabs a[aria-current="page"] { background: var(--sage); color: var(--sage-ink); }
+
+/* Botones */
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 9px 14px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: .9rem; min-height: 42px; }
+.btn:hover { border-color: var(--sage); }
+.btn.primary { background: var(--sage); color: var(--sage-ink); border-color: var(--sage); }
+.btn.danger { color: var(--red); }
+.btn.small { padding: 4px 10px; min-height: 34px; font-size: .82rem; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.hint { color: var(--muted); font-size: .85rem; margin: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 14px; min-width: 0; }
+.eyebrow { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; }
+
+/* Vista sesión */
+.head-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .head-grid { grid-template-columns: minmax(0, 1fr); } }
+.cvic { border-collapse: separate; border-spacing: 2px; width: 100%; font-size: .78rem; font-weight: 600; text-transform: none; }
+.cvic caption { background: var(--sage); color: var(--sage-ink); font-weight: 700; font-size: 1rem; padding: 6px; letter-spacing: .04em; }
+.cvic td { background: var(--row); padding: 5px 7px; vertical-align: middle; }
+.cvic td.n { text-align: center; width: 2.4em; font-variant-numeric: tabular-nums; font-weight: 700; }
+.cvic td.chk { width: 2.6em; padding: 0; }
+.cvic td.chk button { width: 100%; min-height: 32px; border: 0; background: transparent; cursor: pointer; font-size: 1.05rem; color: var(--ok); font-weight: 700; }
+.ini { color: var(--red); }
+.sesion-label { font-family: var(--font-display); font-weight: 700; color: var(--sage); font-size: 1.6rem; letter-spacing: .08em; }
+.sesion-input { width: 100%; border: 0; border-bottom: 3px solid var(--sage); background: transparent; font-family: var(--font-display); font-size: 1.5rem; padding: 4px 2px; }
+.field { display: grid; gap: 4px; }
+.field label { font-size: .8rem; font-weight: 600; color: var(--muted); }
+.field input, .field select { border: 1px solid var(--line); background: var(--bg); border-radius: 9px; padding: 9px 10px; min-height: 42px; width: 100%; }
+
+/* Tablas de asistencia */
+.asist { display: grid; gap: 8px; }
+.asist-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.lotus-band { height: 22px; background-repeat: repeat-x; background-size: 44px 22px; opacity: .9; }
+.scroller { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.grid { border-collapse: separate; border-spacing: 4px; min-width: 980px; width: 100%; }
+.grid th { background: var(--cell); color: var(--cell-ink); text-align: left; padding: 0 12px; font-family: var(--font-display); font-weight: 700; white-space: nowrap; height: 50px; width: 118px; }
+.grid th.l-cvic { font-size: 1.5rem; }
+.grid th.l-cons { font-size: .78rem; letter-spacing: .04em; }
+.grid th.l-inv { font-size: 1rem; }
+.grid th.l-tot { font-size: 1.4rem; }
+.grid th.l-hora { font-size: 1.3rem; }
+.grid thead th, .grid thead td { height: auto; background: transparent; font-family: var(--font-body); font-size: .7rem; color: var(--muted); text-align: center; font-weight: 600; padding: 0; }
+.grid td { background: var(--cell); padding: 0; height: 50px; min-width: 44px; }
+.grid tr.cons td { background: var(--consejo); }
+.grid tr.cons th { box-shadow: inset 6px 0 0 var(--consejo); }
+.grid td input { width: 100%; height: 50px; border: 0; background: transparent; text-align: center; font-size: 1.2rem; font-weight: 600; color: var(--cell-ink); font-variant-numeric: tabular-nums; padding: 0; }
+.grid tr.cons td input { color: var(--consejo-ink); }
+.grid td.out { text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--cell-ink); }
+.grid tr.tot td.out { font-size: 1.25rem; }
+.grid tr.hora td.out { font-size: .85rem; }
+
+/* Integrantes */
+.members { display: grid; gap: 6px; }
+.member { display: grid; grid-template-columns: 2.4em minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.member .n { font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; color: var(--muted); }
+.member input { border: 1px solid var(--line); background: var(--bg); border-radius: 9px; padding: 8px 10px; min-height: 42px; width: 100%; }
+.member .acts { display: flex; gap: 4px; }
+
+/* Plantilla */
+.preview { background: repeating-conic-gradient(var(--row) 0 25%, var(--surface) 0 50%) 0 0 / 20px 20px; border: 1px solid var(--line); border-radius: 12px; padding: 12px; overflow: auto; }
+.preview canvas { width: 100%; height: auto; display: block; box-shadow: 0 2px 12px rgb(0 0 0 / .12); background: #fff; }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.check { display: flex; gap: 8px; align-items: center; font-weight: 500; }
+.check input { width: 20px; height: 20px; }
+ol.steps { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; color: var(--muted); font-size: .9rem; }
+.msg { font-size: .88rem; font-weight: 600; }
+.msg[data-k="err"] { color: var(--red); }
+.msg[data-k="ok"] { color: var(--ok); }
+.confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--row); border-radius: 10px; padding: 8px 10px; }
+@media (prefers-reduced-motion: no-preference) { .btn, .tabs a { transition: background .15s, border-color .15s; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Asistencia CVIC</h1>
+      <span class="status" id="status" data-s="ok">Guardado en la tableta</span>
+    </div>
+    <nav class="tabs" aria-label="Vistas">
+      <a href="#sesion" id="tab-sesion">Sesión</a>
+      <a href="#integrantes" id="tab-integrantes">Integrantes CVIC</a>
+      <a href="#plantilla" id="tab-plantilla">Plantilla para Notes</a>
+    </nav>
+  </header>
+
+  <!-- SESIÓN -->
+  <section id="view-sesion" class="wrap-view" style="display:grid;gap:20px">
+    <div class="head-grid">
+      <div class="panel" style="padding:10px">
+        <div class="scroller"><table class="cvic" id="cvicTable"></table></div>
+        <p class="hint">Toca la última columna de cada integrante para marcarlo como presente.</p>
+      </div>
+      <div class="panel">
+        <div class="field">
+          <span class="sesion-label">SESIÓN:</span>
+          <input class="sesion-input" id="sesionNombre" type="text" autocomplete="off" placeholder="Nombre de la sesión">
+        </div>
+        <div class="opts">
+          <div class="field"><label for="sesionFecha">Fecha</label><input id="sesionFecha" type="date"></div>
+          <div class="field"><label for="sesionSel">Sesiones guardadas</label><select id="sesionSel"></select></div>
+        </div>
+        <div class="row">
+          <button class="btn primary" id="btnNueva" type="button">Nueva sesión</button>
+          <button class="btn danger" id="btnBorrar" type="button">Eliminar esta sesión</button>
+        </div>
+        <div class="confirm" id="confirmBorrar" hidden>
+          <span>¿Eliminar la sesión y sus tablas?</span>
+          <button class="btn small danger" id="btnBorrarSi" type="button">Sí, eliminar</button>
+          <button class="btn small" id="btnBorrarNo" type="button">Cancelar</button>
+        </div>
+        <p class="hint">Escribe con el S Pen directamente en las casillas: Samsung convierte la escritura a texto. TOTAL y Hora se llenan solos.</p>
+      </div>
+    </div>
+    <div id="tablas" style="display:grid;gap:18px"></div>
+    <div class="row"><button class="btn primary" id="btnAddTabla" type="button">+ Agregar tabla de asistencia</button></div>
+  </section>
+
+  <!-- INTEGRANTES -->
+  <section id="view-integrantes" hidden>
+    <div class="panel">
+      <div>
+        <h2 style="font-family:var(--font-display);color:var(--sage)">Integrantes de la CVIC</h2>
+        <p class="hint">El número se asigna solo según el orden. Para poner letras en rojo usa corchetes: <code>[C]oordinación de [V]inculación</code>.</p>
+      </div>
+      <div class="members" id="members"></div>
+      <div class="row">
+        <button class="btn primary" id="btnAddMember" type="button">+ Agregar integrante</button>
+        <button class="btn" id="btnResetMembers" type="button">Restaurar lista original</button>
+      </div>
+      <div class="confirm" id="confirmReset" hidden>
+        <span>¿Reemplazar la lista actual por la original de 18 integrantes?</span>
+        <button class="btn small danger" id="btnResetSi" type="button">Sí, restaurar</button>
+        <button class="btn small" id="btnResetNo" type="button">Cancelar</button>
+      </div>
+      <div class="field" style="max-width:260px">
+        <label for="numCols">Columnas por tabla de asistencia</label>
+        <input id="numCols" type="number" min="6" max="30" inputmode="numeric">
+      </div>
+    </div>
+    <div class="panel" style="margin-top:20px">
+      <div>
+        <h2 style="font-family:var(--font-display);color:var(--sage)">Respaldo</h2>
+        <p class="hint">Los datos viven dentro de la app. Guarda un respaldo antes de desinstalarla o de cambiar de tableta; se guarda en Descargas › Plantillas CVIC.</p>
+      </div>
+      <div class="row">
+        <button class="btn" id="btnRespaldo" type="button">Guardar respaldo</button>
+        <label class="btn" for="fileRestaurar" style="display:inline-flex;align-items:center">Restaurar respaldo</label>
+        <input id="fileRestaurar" type="file" accept="application/json,.json" hidden>
+        <span class="msg" id="bkMsg"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLANTILLA -->
+  <section id="view-plantilla" hidden style="gap:20px">
+    <div class="panel">
+      <div>
+        <h2 style="font-family:var(--font-display);color:var(--sage)">Plantilla para Samsung Notes</h2>
+        <p class="hint">Se genera con la lista actual de integrantes. Vuelve a guardarla cada vez que cambie la lista o empiece una sesión nueva.</p>
+      </div>
+      <div class="opts">
+        <div class="field"><label for="optTablas">Tablas de asistencia en la plantilla</label>
+          <select id="optTablas"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
+        <label class="check"><input type="checkbox" id="optSesion"> Escribir el nombre de la sesión</label>
+        <label class="check"><input type="checkbox" id="optDatos"> Incluir los números ya capturados</label>
+      </div>
+      <div class="row">
+        <button class="btn primary" id="btnPdf" type="button">Guardar PDF</button>
+        <button class="btn" id="btnPng" type="button">Guardar imagen PNG</button>
+        <span class="msg" id="dlMsg"></span>
+      </div>
+      <ol class="steps">
+        <li>Toca <strong>Guardar PDF</strong>: queda en <strong>Descargas › Plantillas CVIC</strong>.</li>
+        <li>En Samsung Notes abre una nota nueva y toca <strong>Estilo de nota → Personalizado → Seleccionar archivo</strong>.</li>
+        <li>Elige el archivo <strong>Plantilla CVIC</strong> desde Descargas › Plantillas CVIC.</li>
+      </ol>
+    </div>
+    <div class="preview"><canvas id="canvas"></canvas></div>
+  </section>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const DEFAULT_MEMBERS = [
+    "[C]oordinación de [V]inculación con el [C]onsejo [U]niversitario",
+    "CVIC-CABINA", "CVIC-MONITOR", "DR. GERARDO GARCÍA LUNA", "CVIC-CAROLINA",
+    "CVIC-DAVID", "CVIC-FIGUEROA", "CVIC-RODRIGO", "CVIC-JOSÉ", "CVIC-LUIS",
+    "CVIC-ARELY", "CVIC-FRANCISCO", "CVIC-ELENA", "CVIC-ADRIANA M.", "CVIC-JULIO",
+    "CVIC-REYNA", "CVIC-SALA", "CVIC-SALA2"
+  ];
+  const LS_KEY = "cvic-asistencia-v1";
+  const $ = (id) => document.getElementById(id);
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+  const hhmm = () => { const d = new Date(); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); };
+  const newCol = () => ({ c: "", k: "", i: "", h: "" });
+  const newTable = (n) => ({ cols: Array.from({ length: n }, newCol) });
+  const newSession = (n) => ({ id: uid(), nombre: "", fecha: today(), creada: Date.now(), tablas: [newTable(n)], presentes: [] });
+
+  function defaultState() {
+    const s = newSession(18);
+    return { config: { members: DEFAULT_MEMBERS.slice(), columnas: 18, actual: s.id, plantilla: { tablas: 2, conSesion: false, conDatos: false } }, sesiones: { [s.id]: s } };
+  }
+  function normalize(st) {
+    if (!st || !st.config || !st.sesiones) return defaultState();
+    const c = st.config;
+    if (!Array.isArray(c.members)) c.members = DEFAULT_MEMBERS.slice();
+    c.columnas = Math.min(30, Math.max(6, parseInt(c.columnas, 10) || 18));
+    c.plantilla = Object.assign({ tablas: 2, conSesion: false, conDatos: false }, c.plantilla || {});
+    if (!Object.keys(st.sesiones).length) { const s = newSession(c.columnas); st.sesiones[s.id] = s; }
+    if (!st.sesiones[c.actual]) c.actual = Object.values(st.sesiones).sort((a, b) => b.creada - a.creada)[0].id;
+    for (const s of Object.values(st.sesiones)) {
+      if (!Array.isArray(s.tablas) || !s.tablas.length) s.tablas = [newTable(c.columnas)];
+      if (!Array.isArray(s.presentes)) s.presentes = [];
+    }
+    return st;
+  }
+
+  let state = null;
+  try { const raw = localStorage.getItem(LS_KEY); if (raw) state = JSON.parse(raw); } catch (e) { state = null; }
+  state = normalize(state);
+  const cur = () => state.sesiones[state.config.actual];
+
+  /* ---------- Guardado (en la tableta) ---------- */
+  const dirtySes = new Set(), deletedSes = new Set();
+  function setStatus(k, text) { const el = $("status"); el.dataset.s = k; el.textContent = text; }
+  function saveLocal() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); setStatus("ok", "Guardado en la tableta · " + hhmm()); }
+    catch (e) { setStatus("err", "No se pudo guardar. Haz un respaldo en Integrantes CVIC."); }
+  }
+  function touch() { saveLocal(); }
+
+  /* ---------- Nombres con iniciales en rojo ---------- */
+  function nameSegments(name) {
+    const out = []; const re = /\[([^\]]+)\]/g; let last = 0, m;
+    while ((m = re.exec(name))) { if (m.index > last) out.push({ t: name.slice(last, m.index), r: false }); out.push({ t: m[1], r: true }); last = re.lastIndex; }
+    if (last < name.length) out.push({ t: name.slice(last), r: false });
+    return out;
+  }
+  function nameNode(name) {
+    const frag = document.createDocumentFragment();
+    nameSegments(name).forEach((s) => { if (s.r) { const sp = document.createElement("span"); sp.className = "ini"; sp.textContent = s.t; frag.appendChild(sp); } else frag.appendChild(document.createTextNode(s.t)); });
+    return frag;
+  }
+
+  /* ---------- Vista Sesión ---------- */
+  function renderCvic() {
+    const t = $("cvicTable"); t.textContent = "";
+    const cap = document.createElement("caption"); cap.textContent = "CVIC"; t.appendChild(cap);
+    const m = state.config.members, half = Math.ceil(m.length / 2), s = cur();
+    const tb = document.createElement("tbody");
+    for (let r = 0; r < half; r++) {
+      const tr = document.createElement("tr");
+      [r, r + half].forEach((idx) => {
+        const n = document.createElement("td"), nm = document.createElement("td"), ck = document.createElement("td");
+        n.className = "n"; ck.className = "chk";
+        if (idx < m.length) {
+          n.textContent = idx + 1; nm.appendChild(nameNode(m[idx]));
+          const b = document.createElement("button"); b.type = "button";
+          const on = !!s.presentes[idx];
+          b.textContent = on ? "✓" : ""; b.setAttribute("aria-pressed", on); b.setAttribute("aria-label", "Presente: " + m[idx].replace(/[\[\]]/g, ""));
+          b.addEventListener("click", () => { s.presentes[idx] = !s.presentes[idx]; touch("ses"); renderCvic(); });
+          ck.appendChild(b);
+        }
+        tr.append(n, nm, ck);
+      });
+      tb.appendChild(tr);
+    }
+    t.appendChild(tb);
+  }
+
+  const ROWS = [
+    { k: "c", label: "CVIC", cls: "l-cvic" },
+    { k: "k", label: "CONSEJEROS", cls: "l-cons", tr: "cons" },
+    { k: "i", label: "Invitados", cls: "l-inv" }
+  ];
+  const num = (v) => { const n = parseInt(v, 10); return isNaN(n) ? 0 : n; };
+  const colTotal = (col) => (col.c === "" && col.k === "" && col.i === "") ? "" : String(num(col.c) + num(col.k) + num(col.i));
+
+  function renderTablas() {
+    const host = $("tablas"); host.textContent = "";
+    const s = cur(), n = state.config.columnas;
+    s.tablas.forEach((tab, ti) => {
+      while (tab.cols.length < n) tab.cols.push(newCol());
+      const box = document.createElement("div"); box.className = "asist";
+      const band = document.createElement("div"); band.className = "lotus-band"; band.style.backgroundImage = "url(" + lotusTile() + ")";
+      const head = document.createElement("div"); head.className = "asist-head";
+      const h = document.createElement("h3"); h.className = "eyebrow"; h.textContent = "Tabla de asistencia " + (ti + 1);
+      head.appendChild(h);
+      if (s.tablas.length > 1) {
+        const del = document.createElement("button"); del.type = "button"; del.className = "btn small danger"; del.textContent = "Quitar tabla";
+        const conf = document.createElement("div"); conf.className = "confirm"; conf.hidden = true;
+        conf.innerHTML = '<span>¿Quitar la tabla ' + (ti + 1) + '?</span>';
+        const yes = document.createElement("button"); yes.type = "button"; yes.className = "btn small danger"; yes.textContent = "Sí, quitar";
+        const no = document.createElement("button"); no.type = "button"; no.className = "btn small"; no.textContent = "Cancelar";
+        conf.append(yes, no);
+        del.addEventListener("click", () => { conf.hidden = false; });
+        no.addEventListener("click", () => { conf.hidden = true; });
+        yes.addEventListener("click", () => { s.tablas.splice(ti, 1); touch("ses"); renderTablas(); });
+        const right = document.createElement("div"); right.className = "row"; right.append(conf, del);
+        head.appendChild(right);
+      }
+      const sc = document.createElement("div"); sc.className = "scroller";
+      const t = document.createElement("table"); t.className = "grid";
+      const thead = document.createElement("thead"); const hr = document.createElement("tr");
+      hr.appendChild(document.createElement("th"));
+      for (let c = 0; c < n; c++) { const td = document.createElement("td"); td.textContent = c + 1; hr.appendChild(td); }
+      thead.appendChild(hr); t.appendChild(thead);
+      const tb = document.createElement("tbody");
+      const totCells = [], horaCells = [];
+      ROWS.forEach((row) => {
+        const tr = document.createElement("tr"); if (row.tr) tr.className = row.tr;
+        const th = document.createElement("th"); th.scope = "row"; th.className = row.cls; th.textContent = row.label; tr.appendChild(th);
+        for (let c = 0; c < n; c++) {
+          const td = document.createElement("td"); const inp = document.createElement("input");
+          inp.type = "text"; inp.inputMode = "numeric"; inp.autocomplete = "off"; inp.id = "t" + ti + "-" + row.k + "-" + c;
+          inp.setAttribute("aria-label", row.label + ", columna " + (c + 1));
+          inp.value = tab.cols[c][row.k];
+          inp.addEventListener("input", () => {
+            const clean = inp.value.replace(/[^0-9]/g, "").slice(0, 4);
+            if (clean !== inp.value) inp.value = clean;
+            const col = tab.cols[c];
+            if (col[row.k] === clean) return;
+            col[row.k] = clean;
+            const tot = colTotal(col);
+            col.h = tot === "" ? "" : hhmm();
+            totCells[c].textContent = tot; horaCells[c].textContent = col.h;
+            touch("ses");
+          });
+          td.appendChild(inp); tr.appendChild(td);
+        }
+        tb.appendChild(tr);
+      });
+      [["tot", "Total", "l-tot", totCells, (col) => colTotal(col)], ["hora", "Hora", "l-hora", horaCells, (col) => col.h]].forEach(([cls, label, lc, arr, fn]) => {
+        const tr = document.createElement("tr"); tr.className = cls;
+        const th = document.createElement("th"); th.scope = "row"; th.className = lc; th.textContent = label; tr.appendChild(th);
+        for (let c = 0; c < n; c++) { const td = document.createElement("td"); td.className = "out"; td.textContent = fn(tab.cols[c]); arr.push(td); tr.appendChild(td); }
+        tb.appendChild(tr);
+      });
+      t.appendChild(tb); sc.appendChild(t);
+      box.append(band, head, sc);
+      host.appendChild(box);
+    });
+  }
+
+  function renderSesionHead() {
+    const s = cur();
+    $("sesionNombre").value = s.nombre; $("sesionFecha").value = s.fecha || "";
+    const sel = $("sesionSel"); sel.textContent = "";
+    Object.values(state.sesiones).sort((a, b) => b.creada - a.creada).forEach((x) => {
+      const o = document.createElement("option"); o.value = x.id;
+      o.textContent = (x.fecha || "sin fecha") + " · " + (x.nombre || "Sin nombre");
+      if (x.id === s.id) o.selected = true; sel.appendChild(o);
+    });
+    $("btnBorrar").disabled = Object.keys(state.sesiones).length < 2;
+  }
+
+  /* ---------- Vista Integrantes ---------- */
+  function renderMembers() {
+    const host = $("members"); host.textContent = "";
+    const m = state.config.members;
+    m.forEach((name, i) => {
+      const row = document.createElement("div"); row.className = "member";
+      const n = document.createElement("span"); n.className = "n"; n.textContent = i + 1;
+      const inp = document.createElement("input"); inp.type = "text"; inp.value = name; inp.id = "m-" + i; inp.setAttribute("aria-label", "Integrante " + (i + 1));
+      inp.addEventListener("input", () => { m[i] = inp.value; touch("config"); });
+      inp.addEventListener("change", () => { renderCvic(); drawPreview(); });
+      const acts = document.createElement("div"); acts.className = "acts";
+      const mk = (txt, lbl, fn, dis) => { const b = document.createElement("button"); b.type = "button"; b.className = "btn small"; b.textContent = txt; b.setAttribute("aria-label", lbl); b.disabled = dis; b.addEventListener("click", fn); return b; };
+      acts.append(
+        mk("↑", "Subir", () => { [m[i - 1], m[i]] = [m[i], m[i - 1]]; changedMembers(); }, i === 0),
+        mk("↓", "Bajar", () => { [m[i + 1], m[i]] = [m[i], m[i + 1]]; changedMembers(); }, i === m.length - 1),
+        mk("Quitar", "Quitar integrante " + (i + 1), () => { m.splice(i, 1); changedMembers(); }, false)
+      );
+      row.append(n, inp, acts); host.appendChild(row);
+    });
+    $("numCols").value = state.config.columnas;
+  }
+  function changedMembers() { touch("config"); renderMembers(); renderCvic(); drawPreview(); }
+
+  /* ---------- Dibujo de la plantilla ---------- */
+  const PAL = { sage: "#66796b", row: "#ecece6", cell: "#c5d3c8", cons: "#b8b4aa", ink: "#1b1b1b", red: "#d32418", lotus: "#d4a48d", lotusIn: "#e9c8b6" };
+  const DISPLAY = '"Mali", "Comic Sans MS", cursive', BODY = '"Inter", Arial, sans-serif';
+
+  function drawLotus(ctx, cx, cy, s) {
+    ctx.save(); ctx.translate(cx, cy); ctx.scale(s, s);
+    ctx.lineWidth = 1.1 / 1; ctx.strokeStyle = PAL.lotus; ctx.fillStyle = "rgba(233,200,182,.35)"; ctx.lineJoin = "round";
+    const petal = (w, h, dx) => { ctx.beginPath(); ctx.moveTo(dx, 6); ctx.bezierCurveTo(dx - w, 2, dx - w * .7, -h * .6, dx, -h); ctx.bezierCurveTo(dx + w * .7, -h * .6, dx + w, 2, dx, 6); ctx.fill(); ctx.stroke(); };
+    // pétalos exteriores
+    ctx.beginPath(); ctx.moveTo(0, 6); ctx.bezierCurveTo(-10, 6, -18, 2, -21, -3); ctx.bezierCurveTo(-13, -4, -6, 0, 0, 6); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, 6); ctx.bezierCurveTo(10, 6, 18, 2, 21, -3); ctx.bezierCurveTo(13, -4, 6, 0, 0, 6); ctx.fill(); ctx.stroke();
+    petal(8, 9, -7); petal(8, 9, 7); petal(7, 13, 0);
+    ctx.beginPath(); ctx.moveTo(-14, 7.5); ctx.quadraticCurveTo(0, 10, 14, 7.5); ctx.stroke();
+    ctx.restore();
+  }
+  let lotusUrl = null;
+  function lotusTile() {
+    if (lotusUrl) return lotusUrl;
+    const c = document.createElement("canvas"); c.width = 88; c.height = 44; const x = c.getContext("2d");
+    drawLotus(x, 44, 26, 1.7); lotusUrl = c.toDataURL(); return lotusUrl;
+  }
+
+  function wrapRich(ctx, segs, maxW) {
+    // divide en palabras conservando qué letras van en rojo
+    const words = []; let curW = [];
+    segs.forEach((sg) => { sg.t.split(/(\s+)/).forEach((p) => { if (!p) return; if (/^\s+$/.test(p)) { if (curW.length) { words.push(curW); curW = []; } } else curW.push({ t: p, r: sg.r }); }); });
+    if (curW.length) words.push(curW);
+    const wWidth = (w) => w.reduce((a, p) => a + ctx.measureText(p.t).width, 0);
+    const space = ctx.measureText(" ").width; const lines = []; let line = [], lw = 0;
+    words.forEach((w) => { const ww = wWidth(w); if (line.length && lw + space + ww > maxW) { lines.push(line); line = []; lw = 0; } if (line.length) lw += space; line.push(w); lw += ww; });
+    if (line.length) lines.push(line);
+    return { lines, space };
+  }
+  function drawRichLines(ctx, wr, x, yTop, lh) {
+    wr.lines.forEach((line, li) => {
+      let cx = x; const y = yTop + lh * li;
+      line.forEach((w, wi) => { if (wi) cx += wr.space; w.forEach((p) => { ctx.fillStyle = p.r ? PAL.red : PAL.ink; ctx.fillText(p.t, cx, y); cx += ctx.measureText(p.t).width; }); });
+    });
+  }
+
+  function drawTemplate(canvas, opts) {
+    const W = 2560, u = W / 1000;
+    const m = state.config.members, half = Math.ceil(m.length / 2), ncol = state.config.columnas;
+    const s = cur();
+    const ctx0 = canvas.getContext("2d");
+    // medir filas de la tabla CVIC
+    ctx0.font = "600 " + (8.6 * u) + "px " + BODY;
+    const nameW = [170, 113].map((w) => (w - 10) * u);
+    const rowH = []; for (let r = 0; r < half; r++) {
+      let lines = 1;
+      [r, r + half].forEach((idx, k) => { if (idx < m.length) lines = Math.max(lines, wrapRich(ctx0, nameSegments(m[idx]), nameW[k]).lines.length); });
+      rowH.push(lines > 1 ? 13 + lines * 11 : 22);
+    }
+    const cvicTop = 8, titleH = 30, gap = 2;
+    const cvicBottom = cvicTop + titleH + gap + rowH.reduce((a, b) => a + b + gap, 0);
+    const headerH = Math.max(cvicBottom, 120) + 6;
+    const lotusH = 26, rowHH = 44, rgap = 4, tableH = lotusH + 5 * (rowHH + rgap);
+    const nT = opts.tablas;
+    const H = headerH + nT * tableH + 8;
+    canvas.width = W; canvas.height = Math.round(H * u);
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.scale(u, u); ctx.textBaseline = "middle";
+
+    // Tabla CVIC
+    const X0 = 8, colW = [22, 35, 170, 35, 113, 50]; const totalW = colW.reduce((a, b) => a + b, 0) + gap * 5;
+    ctx.fillStyle = PAL.sage; ctx.fillRect(X0, cvicTop, totalW, titleH);
+    ctx.fillStyle = "#ffffff"; ctx.font = "700 16px " + BODY; ctx.textAlign = "center"; ctx.fillText("CVIC", X0 + totalW / 2, cvicTop + titleH / 2 + 1);
+    let y = cvicTop + titleH + gap;
+    for (let r = 0; r < half; r++) {
+      let x = X0; const h = rowH[r];
+      colW.forEach((w) => { ctx.fillStyle = PAL.row; ctx.fillRect(x, y, w, h); x += w + gap; });
+      [[r, 1], [r + half, 3]].forEach(([idx, ci]) => {
+        if (idx >= m.length) return;
+        const xNum = X0 + colW.slice(0, ci).reduce((a, b) => a + b + gap, 0);
+        ctx.fillStyle = PAL.ink; ctx.font = "700 9.5px " + BODY; ctx.textAlign = "center"; ctx.fillText(String(idx + 1), xNum + colW[ci] / 2, y + h / 2);
+        const xName = xNum + colW[ci] + gap + 5;
+        ctx.font = "600 8.6px " + BODY; ctx.textAlign = "left";
+        const wr = wrapRich(ctx, nameSegments(m[idx]), colW[ci + 1] - 10);
+        const lh = 11; drawRichLines(ctx, wr, xName, y + h / 2 - (wr.lines.length - 1) * lh / 2, lh);
+      });
+      y += h + gap;
+    }
+
+    // SESIÓN
+    ctx.textAlign = "left"; ctx.fillStyle = PAL.sage; ctx.font = "700 22px " + DISPLAY;
+    const sx = 575, sy = 46; ctx.fillText("SESIÓN:", sx, sy);
+    const lx = sx + ctx.measureText("SESIÓN:").width + 10;
+    ctx.fillRect(lx, sy + 9, 990 - lx, 2.2);
+    if (opts.conSesion && s.nombre) {
+      ctx.fillStyle = PAL.ink; ctx.font = "500 18px " + DISPLAY;
+      let txt = s.nombre; while (ctx.measureText(txt).width > 990 - lx - 8 && txt.length > 1) txt = txt.slice(0, -1);
+      ctx.fillText(txt, lx + 4, sy - 1);
+      if (s.fecha) { ctx.fillStyle = PAL.sage; ctx.font = "500 12px " + DISPLAY; ctx.fillText(s.fecha.split("-").reverse().join("/"), lx + 4, sy + 26); }
+    }
+
+    // Tablas de asistencia
+    const LX = 10, LW = 112, CX = 126, CR = 992; const cw = (CR - CX - (ncol - 1) * 3) / ncol;
+    const labels = [["CVIC", "700 26px"], ["CONSEJEROS", "700 11px"], ["Invitados", "700 15px"], ["Total", "700 24px"], ["Hora", "700 22px"]];
+    for (let t = 0; t < nT; t++) {
+      let ty = headerH + t * tableH;
+      for (let lxp = 25; lxp < 1000; lxp += 59) drawLotus(ctx, lxp, ty + 14, .62);
+      ty += lotusH;
+      const tab = s.tablas[t];
+      labels.forEach(([lab, f], r) => {
+        const ry = ty + r * (rowHH + rgap);
+        ctx.fillStyle = PAL.cell; ctx.fillRect(LX, ry, LW, rowHH);
+        ctx.fillStyle = PAL.ink; ctx.font = f + " " + DISPLAY; ctx.textAlign = "left"; ctx.fillText(lab, LX + 12, ry + rowHH / 2 + 1);
+        for (let c = 0; c < ncol; c++) {
+          const cx = CX + c * (cw + 3);
+          ctx.fillStyle = r === 1 ? PAL.cons : PAL.cell; ctx.fillRect(cx, ry, cw, rowHH);
+          if (opts.conDatos && tab && tab.cols[c]) {
+            const col = tab.cols[c]; const v = [col.c, col.k, col.i, colTotal(col), col.h][r];
+            if (v) { ctx.fillStyle = PAL.ink; ctx.textAlign = "center"; ctx.font = (r === 4 ? "600 11px " : "700 17px ") + BODY; ctx.fillText(v, cx + cw / 2, ry + rowHH / 2 + 1); }
+          }
+        }
+      });
+    }
+  }
+
+  function drawPreview() {
+    const p = state.config.plantilla;
+    drawTemplate($("canvas"), p);
+  }
+  function renderPlantillaOpts() {
+    const p = state.config.plantilla;
+    $("optTablas").value = String(p.tablas); $("optSesion").checked = !!p.conSesion; $("optDatos").checked = !!p.conDatos;
+  }
+
+  /* ---------- Descargas ---------- */
+  const app = window.AndroidApp || null;
+  function fileBase() {
+    const s = cur(); const nm = (s.nombre || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    return "Plantilla CVIC" + (nm ? " " + nm : "") + " " + (s.fecha || today());
+  }
+  function msg(k, t, el) { el = el || $("dlMsg"); el.dataset.k = k; el.textContent = t; }
+  async function loadFonts() {
+    try { await Promise.all(["700 22px Mali", "500 18px Mali", "600 9px Inter", "700 9px Inter"].map((f) => document.fonts.load(f))); } catch (e) {}
+  }
+  async function buildCanvas() {
+    await loadFonts();
+    const c = document.createElement("canvas"); drawTemplate(c, state.config.plantilla); return c;
+  }
+  function browserDownload(filename, blob, el) {
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); msg("ok", "Listo: " + filename, el);
+  }
+  // La app responde con "OK:<texto>" o "ERROR:<texto>".
+  function showAppResult(r, el) { const ok = String(r).startsWith("OK:"); msg(ok ? "ok" : "err", String(r).replace(/^(OK|ERROR):/, ""), el); }
+  $("btnPdf").addEventListener("click", async () => {
+    msg("", "Generando PDF…");
+    const c = await buildCanvas();
+    if (app) { setTimeout(() => showAppResult(app.guardarPdf(fileBase() + ".pdf", c.toDataURL("image/png").split(",")[1])), 30); return; }
+    msg("err", "El PDF se genera desde la app instalada. En el navegador usa la imagen PNG.");
+  });
+  $("btnPng").addEventListener("click", async () => {
+    msg("", "Generando imagen…");
+    const c = await buildCanvas();
+    if (app) { setTimeout(() => showAppResult(app.guardarArchivo(fileBase() + ".png", "image/png", c.toDataURL("image/png").split(",")[1])), 30); return; }
+    c.toBlob((b) => { if (b) browserDownload(fileBase() + ".png", b); else msg("err", "No se pudo crear la imagen."); }, "image/png");
+  });
+
+  /* ---------- Respaldo ---------- */
+  function utf8ToB64(str) { const bytes = new TextEncoder().encode(str); let bin = ""; bytes.forEach((b) => { bin += String.fromCharCode(b); }); return btoa(bin); }
+  $("btnRespaldo").addEventListener("click", () => {
+    const name = "Respaldo Asistencia CVIC " + today() + " " + hhmm().replace(":", "") + ".json";
+    const json = JSON.stringify(state, null, 1);
+    if (app) showAppResult(app.guardarArchivo(name, "application/json", utf8ToB64(json)), $("bkMsg"));
+    else browserDownload(name, new Blob([json], { type: "application/json" }), $("bkMsg"));
+  });
+  $("fileRestaurar").addEventListener("change", (e) => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => {
+      try {
+        const data = JSON.parse(rd.result);
+        if (!data || !data.config || !data.sesiones) throw new Error("formato");
+        state = normalize(data); saveLocal(); renderAll(); msg("ok", "Respaldo restaurado.", $("bkMsg"));
+      } catch (err) { msg("err", "Ese archivo no es un respaldo de Asistencia CVIC.", $("bkMsg")); }
+      e.target.value = "";
+    };
+    rd.readAsText(f);
+  });
+
+  /* ---------- Eventos ---------- */
+  $("sesionNombre").addEventListener("input", (e) => { cur().nombre = e.target.value; touch("ses"); });
+  $("sesionNombre").addEventListener("change", renderSesionHead);
+  $("sesionFecha").addEventListener("change", (e) => { cur().fecha = e.target.value; touch("ses"); renderSesionHead(); });
+  $("sesionSel").addEventListener("change", (e) => { state.config.actual = e.target.value; touch("config"); renderAll(); });
+  $("btnNueva").addEventListener("click", () => { const s = newSession(state.config.columnas); state.sesiones[s.id] = s; state.config.actual = s.id; touch("config"); touch("ses", s.id); renderAll(); $("sesionNombre").focus(); });
+  $("btnBorrar").addEventListener("click", () => { $("confirmBorrar").hidden = false; });
+  $("btnBorrarNo").addEventListener("click", () => { $("confirmBorrar").hidden = true; });
+  $("btnBorrarSi").addEventListener("click", () => {
+    const id = state.config.actual; delete state.sesiones[id];     state = normalize(state); $("confirmBorrar").hidden = true; touch("config"); renderAll();
+  });
+  $("btnAddTabla").addEventListener("click", () => { cur().tablas.push(newTable(state.config.columnas)); touch("ses"); renderTablas(); });
+  $("btnAddMember").addEventListener("click", () => { state.config.members.push("CVIC-"); changedMembers(); const inp = $("m-" + (state.config.members.length - 1)); if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); } });
+  $("btnResetMembers").addEventListener("click", () => { $("confirmReset").hidden = false; });
+  $("btnResetNo").addEventListener("click", () => { $("confirmReset").hidden = true; });
+  $("btnResetSi").addEventListener("click", () => { state.config.members = DEFAULT_MEMBERS.slice(); $("confirmReset").hidden = true; changedMembers(); });
+  $("numCols").addEventListener("change", (e) => {
+    const v = Math.min(30, Math.max(6, parseInt(e.target.value, 10) || 18)); state.config.columnas = v; e.target.value = v;
+    touch("config"); renderTablas(); drawPreview();
+  });
+  $("optTablas").addEventListener("change", (e) => { state.config.plantilla.tablas = parseInt(e.target.value, 10) || 1; touch("config"); drawPreview(); });
+  $("optSesion").addEventListener("change", (e) => { state.config.plantilla.conSesion = e.target.checked; touch("config"); drawPreview(); });
+  $("optDatos").addEventListener("change", (e) => { state.config.plantilla.conDatos = e.target.checked; touch("config"); drawPreview(); });
+
+  /* ---------- Navegación ---------- */
+  const VIEWS = ["sesion", "integrantes", "plantilla"];
+  function route() {
+    const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "sesion";
+    VIEWS.forEach((x) => {
+      const el = $("view-" + x); el.hidden = x !== v; if (x === v) el.style.display = "grid";
+      const t = $("tab-" + x); if (x === v) t.setAttribute("aria-current", "page"); else t.removeAttribute("aria-current");
+    });
+    if (v === "plantilla") drawPreview();
+  }
+  window.addEventListener("hashchange", route);
+
+  function renderAll() { renderSesionHead(); renderCvic(); renderTablas(); renderMembers(); renderPlantillaOpts(); drawPreview(); }
+  renderAll(); route();
+  loadFonts().then(drawPreview);
+  setStatus("ok", "Guardado en la tableta");
+})();
+</script>
+</body>
+</html>
